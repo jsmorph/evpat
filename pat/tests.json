@@ -31,7 +31,14 @@
 	"matches": true
     },
     {
-	"pat": {"want":{"many":"tacos"}},
+	"aws": true,
+	"pat": {"want":["tacos"]},
+	"msg": {"want":"tacos"},
+	"matches": true
+    },
+    {
+	"aws": true,
+	"pat": {"want":{"many":["tacos"]}},
 	"msg": {"want":{"many":"tacos","some":"chips"}},
 	"matches": true
     },
@@ -61,6 +68,7 @@
 	"matches": true
     },
     {
+	"aws": false,
 	"pat": {"want":[{"numeric":["<",10,">",5]}]},
 	"msg": {"want":7},
 	"matches": true
@@ -71,11 +79,13 @@
 	"matches": true
     },
     {
+	"aws": true,
 	"pat": {"want":[{"exists":true}]},
 	"msg": {"want":true},
 	"matches": true
     },
     {
+	"aws": true,
 	"pat": {"want":[{"exists":false}]},
 	"msg": {"want":true},
 	"matches": false
