@@ -38,9 +38,11 @@ func TestBasic(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	cfg := &Cfg{}
+
 	for _, tc := range cases {
 		t.Run(JSON(tc), func(t *testing.T) {
-			c, err := ParsePattern(tc.Pat)
+			c, err := cfg.ParsePattern(tc.Pat)
 			if err != nil {
 				t.Fatal(err)
 			}

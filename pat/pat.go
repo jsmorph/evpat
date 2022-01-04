@@ -77,7 +77,18 @@ func (cs Constraints) Matches(x interface{}) (bool, error) {
 	return false, nil
 }
 
-func ParseConstraint(x interface{}) (Constraint, error) {
+// Cfg can store limits and options for parsing patterns.
+type Cfg struct {
+}
+
+var DefaultCfg = &Cfg{}
+
+// ParsePattern just calls DefaultCfg.ParsePattern().
+func ParsePattern(x interface{}) (Constraint, error) {
+	return DefaultCfg.ParsePattern(x)
+}
+
+func (cfg *Cfg) parseConstraint(x interface{}) (Constraint, error) {
 	switch vv := x.(type) {
 	default:
 		return &Literal{
@@ -143,12 +154,12 @@ func ParseConstraint(x interface{}) (Constraint, error) {
 	}
 }
 
-func ParsePattern(x interface{}) (Constraint, error) {
+func (cfg *Cfg) ParsePattern(x interface{}) (Constraint, error) {
 	switch vv := x.(type) {
 	case []interface{}:
 		cs := make(Constraints, len(vv))
 		for i, v := range vv {
-			c, err := ParseConstraint(v)
+			c, err := cfg.parseConstraint(v)
 			if err != nil {
 				return nil, err
 			}
@@ -158,7 +169,7 @@ func ParsePattern(x interface{}) (Constraint, error) {
 	case map[string]interface{}:
 		m := make(Map, len(vv))
 		for k, v := range vv {
-			c, err := ParsePattern(v)
+			c, err := cfg.ParsePattern(v)
 			if err != nil {
 				return nil, err
 			}
