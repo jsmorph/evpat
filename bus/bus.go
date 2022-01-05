@@ -9,20 +9,20 @@ import (
 )
 
 type Msg struct {
-	Type    string
-	Payload interface{}
-	Id      string
+	Type    string      `json:"type,omitempty"`
+	Payload interface{} `json:"payload"`
+	Id      string      `json:"id,omitempty"`
 }
 
 type Consumer struct {
-	Replay   bool
-	LastId   string
-	Pattern  pat.Constraint
+	Query    *Query
 	Outgoing chan []Msg
 }
 
 type Query struct {
+	Replay   bool
 	From, To string
+	Limit    int
 	Filter   pat.Constraint
 }
 
@@ -101,12 +101,12 @@ func (b *Bus) Run(ctx context.Context) error {
 func (b *Bus) forward(ctx context.Context, c *Consumer, msgs []Msg) error {
 
 	var filtered []Msg
-	if c.Pattern == nil {
+	if c.Query == nil || c.Query.Filter == nil {
 		filtered = msgs
 	} else {
 		filtered = make([]Msg, 0, len(msgs))
 		for _, msg := range msgs {
-			if ok, _ := c.Pattern.Matches(msg.Payload); ok {
+			if ok, _ := c.Query.Filter.Matches(msg.Payload); ok {
 				filtered = append(filtered, msg)
 			}
 		}
@@ -123,13 +123,10 @@ func (b *Bus) forward(ctx context.Context, c *Consumer, msgs []Msg) error {
 }
 
 func (b *Bus) replay(ctx context.Context, c *Consumer) error {
-	if !c.Replay {
+	if c.Query == nil || !c.Query.Replay {
 		return nil
 	}
-	q := &Query{
-		From: c.LastId,
-	}
-	in, err := b.History(ctx, q)
+	in, err := b.History(ctx, c.Query)
 	if err != nil {
 		return err
 	}
