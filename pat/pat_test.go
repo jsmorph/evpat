@@ -57,7 +57,53 @@ func TestBasic(t *testing.T) {
 	}
 }
 
-func TestAWS(t *testing.T) {
+func BenchmarkBasic(b *testing.B) {
+
+	bs, err := ioutil.ReadFile("tests.json")
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	var cases []TestCase
+	if err := json.Unmarshal(bs, &cases); err != nil {
+		b.Fatal(err)
+	}
+
+	cfg := &Cfg{}
+
+	var (
+		pats = make([]Constraint, len(cases))
+		msgs = make([]interface{}, len(cases))
+	)
+
+	for i, tc := range cases {
+		c, err := cfg.ParsePattern(tc.Pat)
+		if err != nil {
+			b.Fatal(err)
+		}
+		pats[i] = c
+		msgs[i] = tc.Msg
+	}
+
+	b.ResetTimer()
+
+	n := 0
+LOOP:
+	for {
+		for i, p := range pats {
+			if _, err := p.Matches(msgs[i]); err != nil {
+				b.Fatal(err)
+			}
+			n++
+			if b.N <= n {
+				break LOOP
+			}
+		}
+	}
+}
+
+// TestWithAWS calls the AWS TestEventPattern API via the AWS Go SDK v2.
+func TestWithAWS(t *testing.T) {
 	if os.Getenv("AWS_PROFILE") == "" &&
 		os.Getenv("AWS_ACCESS_KEY_ID") == "" {
 		t.Skip("AWS access not configured")

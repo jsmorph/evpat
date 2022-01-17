@@ -13,7 +13,7 @@ import (
 	"github.com/jsmorph/evpat/bus"
 )
 
-func TestSSE(t *testing.T) {
+func TestBasic(t *testing.T) {
 	var (
 		ctx, cancel = context.WithCancel(context.Background())
 		b           = bus.NewBus(10, time.Second, time.Second)
@@ -45,6 +45,9 @@ func TestSSE(t *testing.T) {
 		s.Handle(ctx, w, r)
 	}
 	ts := httptest.NewServer(http.HandlerFunc(h))
+	fmt.Printf("%s\n", ts.URL)
+	time.Sleep(10 * time.Second)
+
 	defer ts.Close()
 
 	go func() {

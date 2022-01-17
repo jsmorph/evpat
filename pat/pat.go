@@ -5,6 +5,31 @@ import (
 	"strings"
 )
 
+// Constraint is probably really a pattern.  Should have been called
+// "Pattern", I guess.
+type Constraint interface {
+	Matches(msg interface{}) (bool, error)
+}
+
+// Cfg can store limits and options for parsing patterns.
+type Cfg struct {
+}
+
+var DefaultCfg = &Cfg{}
+
+// ParsePattern just calls DefaultCfg.ParsePattern().
+//
+// ToDo: Fix name of function or name of return type.
+func ParsePattern(x interface{}) (Constraint, error) {
+	return DefaultCfg.ParsePattern(x)
+}
+
+// Matches is a predicate that reports whether its second argument
+// matches the pattern given in the first argument.
+//
+// This function is called recursively on it's first argument.  When
+// that first argument is a Constraint, the the Matches method of that
+// interface is called.  Otherwise, the match check is mostly literal.
 func Matches(pat, y interface{}) (bool, error) {
 	switch v1 := pat.(type) {
 	case Constraint:
@@ -54,8 +79,12 @@ func Matches(pat, y interface{}) (bool, error) {
 	return false, nil
 }
 
+// Constraints is just a list of Constraints, and a Constraints is
+// itself a Constraint.
 type Constraints []Constraint
 
+// Matches performs matching with the special Constraint array
+// behavior.
 func (cs Constraints) Matches(x interface{}) (bool, error) {
 	if len(cs) == 0 {
 		return true, nil
@@ -75,17 +104,6 @@ func (cs Constraints) Matches(x interface{}) (bool, error) {
 		}
 	}
 	return false, nil
-}
-
-// Cfg can store limits and options for parsing patterns.
-type Cfg struct {
-}
-
-var DefaultCfg = &Cfg{}
-
-// ParsePattern just calls DefaultCfg.ParsePattern().
-func ParsePattern(x interface{}) (Constraint, error) {
-	return DefaultCfg.ParsePattern(x)
 }
 
 func (cfg *Cfg) parseConstraint(x interface{}) (Constraint, error) {
@@ -154,6 +172,9 @@ func (cfg *Cfg) parseConstraint(x interface{}) (Constraint, error) {
 	}
 }
 
+// ParsePattern parses a Constraint from a plain value.
+//
+// ToDo: Fix name of function or name of return type.
 func (cfg *Cfg) ParsePattern(x interface{}) (Constraint, error) {
 	switch vv := x.(type) {
 	case []interface{}:
@@ -183,9 +204,19 @@ func (cfg *Cfg) ParsePattern(x interface{}) (Constraint, error) {
 	}
 }
 
-type Constraint interface {
-	Matches(msg interface{}) (bool, error)
+// pass is a Constraint with a Matches method that always returns
+// true.
+type pass struct {
 }
+
+// Matches always returns true.
+func (c *pass) Matches(msg interface{}) (bool, error) {
+	return true, nil
+}
+
+// Pass is a handy (?) Constraint with a Matches method that always
+// returns true.
+var Pass = &pass{}
 
 type Map map[string]interface{}
 
@@ -236,7 +267,7 @@ type NumericPredicate struct {
 	Value    float64
 }
 
-func ToNumber(x interface{}) (float64, error) {
+func toNumber(x interface{}) (float64, error) {
 	switch vv := x.(type) {
 	case float64:
 		return vv, nil
@@ -252,7 +283,7 @@ func ToNumber(x interface{}) (float64, error) {
 }
 
 func (c *NumericPredicate) Matches(msg interface{}) (bool, error) {
-	x, err := ToNumber(msg)
+	x, err := toNumber(msg)
 	if err != nil {
 		return false, nil
 	}

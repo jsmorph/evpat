@@ -1,3 +1,9 @@
+# Event pattern (matching)
+
+A naive implementation of [Amazon EventBridge event
+   patterns](https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-event-patterns.html).
+   
+
 ## ToDo
 
 - [ ] Null
@@ -12,3 +18,4 @@
 - [x] Test cases as JSON
 - [ ] Benchmarks
 - [x] Array values
+- [ ] Better documentation since IMHO the AWS [docs](https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-event-patterns.html) aren't great
