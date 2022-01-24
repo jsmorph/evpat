@@ -1,15 +1,23 @@
 [
     {
+	"pat":{"type":"conj"},
+	"msg":{"foo":"bar"},
+	"matches": false
+    },
+    {
+	"pat":{"type":"conj"},
+	"msg":{"type":"conj"},
+	"matches": true
+    },
+    {
 	"pat": "tacos",
 	"msg": "tacos",
 	"matches": true
     },
-
     {
 	"pat": "tacos",
 	"msg": "queso"
     },
-
     {
 	"pat": ["tacos","chips"],
 	"msg": "chips",

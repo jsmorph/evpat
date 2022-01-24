@@ -37,17 +37,27 @@ func Matches(pat, y interface{}) (bool, error) {
 	case map[string]interface{}:
 		switch v2 := y.(type) {
 		case map[string]interface{}:
+			if len(v1) == 0 {
+				return true, nil
+			}
 			for k, x := range v1 {
 				if z, have := v2[k]; have {
-					if ok, err := Matches(x, z); !ok || err != nil {
-						return ok, err
-					}
-				} else {
 					if c, is := x.(*Exists); is {
-						return !c.Value, nil
+						return c.Value, nil
 					}
+					ok, err := Matches(x, z)
+					if err != nil {
+						return false, err
+					}
+					return ok, nil
 				}
+				if c, is := x.(*Exists); is {
+					return !c.Value, nil
+				}
+				return false, nil
 			}
+		default:
+			return false, nil
 		}
 
 	case string:
@@ -103,6 +113,7 @@ func (cs Constraints) Matches(x interface{}) (bool, error) {
 			}
 		}
 	}
+
 	return false, nil
 }
 
@@ -225,14 +236,17 @@ func (c Map) Matches(x interface{}) (bool, error) {
 	if !is {
 		return false, nil
 	}
-	for p, v := range m {
-		if v2, have := c[p]; have {
-			if c1, is := v2.(Constraint); is {
-				if ok, err := c1.Matches(v); !ok || err != nil {
-					return ok, err
-				}
+	if 0 == len(c) {
+		return true, nil
+	}
+	for p, v1 := range c {
+		if v2, have := m[p]; have {
+			if pc, is := v1.(*Exists); is {
+				return pc.Value, nil
 			}
+			return Matches(v1, v2)
 		}
+		return false, nil
 	}
 
 	return true, nil
