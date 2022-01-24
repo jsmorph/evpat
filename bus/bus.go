@@ -2,6 +2,7 @@ package bus
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"time"
@@ -123,7 +124,8 @@ func (b *Bus) forward(ctx context.Context, c *Consumer, msgs []Msg) error {
 	}
 	filtered = make([]Msg, 0, len(msgs))
 	for _, msg := range msgs {
-		if ok, _ := c.Query.Filter.Matches(msg.Payload); ok {
+		x := Canonicalize(msg)
+		if ok, _ := c.Query.Filter.Matches(x); ok {
 			filtered = append(filtered, msg)
 		}
 	}
@@ -136,6 +138,18 @@ func (b *Bus) forward(ctx context.Context, c *Consumer, msgs []Msg) error {
 	case c.Outgoing <- filtered:
 		return nil
 	}
+}
+
+func Canonicalize(x interface{}) interface{} {
+	js, err := json.Marshal(&x)
+	if err != nil {
+		return x
+	}
+	var y interface{}
+	if err = json.Unmarshal(js, &y); err != nil {
+		return x
+	}
+	return y
 }
 
 func (b *Bus) Replay(ctx context.Context, c *Consumer) error {

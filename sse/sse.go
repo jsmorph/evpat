@@ -55,7 +55,6 @@ func (s *SSE) Handle(ctx context.Context, w http.ResponseWriter, r *http.Request
 	}
 
 	p = q.Get("replay")
-	log.Printf("debug replay %s", p)
 	replay := bus.DefaultQuery.Replay
 	switch strings.ToLower(p) {
 	case "true":
@@ -87,6 +86,12 @@ func (s *SSE) Handle(ctx context.Context, w http.ResponseWriter, r *http.Request
 		}
 		filter = p
 	}
+
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
 
 	// Register bus.Consumer and defer deregistration.
 
@@ -122,7 +127,6 @@ LOOP:
 		case <-ctx.Done():
 			return bus.Canceled
 		case msgs := <-c.Outgoing:
-			log.Printf("SSE.Handle got %d msgs", len(msgs))
 			for _, msg := range msgs {
 				var e string
 
@@ -156,7 +160,7 @@ LOOP:
 		}
 	}
 
-	log.Printf("SSE.Handle terminating")
+	log.Printf("SSE.Handler terminating")
 
 	return nil
 }

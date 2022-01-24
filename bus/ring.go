@@ -76,6 +76,9 @@ func (r *Ring) ReplayRecent(n int) []*Msg {
 	if n <= 0 {
 		n = r.size
 	}
+	if n > r.size {
+		n = r.size
+	}
 	acc := make([]*Msg, 0, n)
 
 	r.RLock()
@@ -115,8 +118,6 @@ func (r *Ring) Read(ctx context.Context, q *Query) (chan []Msg, error) {
 		n    = 0
 	)
 
-	log.Printf("Ring.Read debug %#v %#v", q, msgs)
-
 LOOP:
 	for _, msg := range msgs {
 		if pass, err := q.Filter.Matches(msg.Payload); err != nil {
@@ -131,8 +132,6 @@ LOOP:
 			}
 		}
 	}
-
-	log.Printf("Ring.Read debug queued %d msgs", n)
 
 	return c, nil
 }
