@@ -93,6 +93,8 @@ func Matches(pat, y interface{}) (bool, error) {
 // itself a Constraint.
 type Constraints []Constraint
 
+var Missing = struct{}{}
+
 // Matches performs matching with the special Constraint array
 // behavior.
 func (cs Constraints) Matches(x interface{}) (bool, error) {
@@ -246,6 +248,12 @@ func (c Map) Matches(x interface{}) (bool, error) {
 			}
 			return Matches(v1, v2)
 		}
+		if pc, is := v1.(*Exists); is {
+			return !pc.Value, nil
+		}
+		if pc, is := v1.(Constraints); is {
+			return pc.Matches(Missing)
+		}
 		return false, nil
 	}
 
@@ -332,5 +340,8 @@ type Exists struct {
 }
 
 func (c *Exists) Matches(msg interface{}) (bool, error) {
+	if msg == Missing {
+		return !c.Value, nil
+	}
 	return c.Value, nil
 }

@@ -97,6 +97,11 @@
 	"pat": {"want":[{"exists":false}]},
 	"msg": {"want":true},
 	"matches": false
+    },
+    {
+	"pat": {"payload":{"dist":[{"numeric":["<",10]}]}},
+	"msg": {"payload":{"dist":4}},
+	"matches": true
     }
 
 ]
