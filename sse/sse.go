@@ -20,12 +20,20 @@ type Cfg struct {
 	// before closing the connection.
 	SessionLimit int
 
+	// MaxBody is the maximum number of bytes to read from the
+	// client.
+	//
+	// The body contains the filter (if any), so it's probably
+	// important to limit what's read pretty aggressively.
+	MaxBody int64
+
 	// Logging turns on some basic logging.
 	Logging bool
 }
 
 var DefaultCfg = &Cfg{
 	SessionLimit: 10000,
+	MaxBody:      4 * 1024,
 }
 
 type SSE struct {
@@ -88,7 +96,7 @@ func (s *SSE) Handle(ctx context.Context, w http.ResponseWriter, r *http.Request
 		punt(w, http.StatusBadRequest, "bad replay %s\n", p)
 		return nil
 	}
-
+	r.Body = http.MaxBytesReader(w, r.Body, s.MaxBody)
 	js, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		punt(w, http.StatusBadRequest, "failed to read filter: %s\n", err)

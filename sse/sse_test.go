@@ -16,7 +16,7 @@ import (
 func TestBasic(t *testing.T) {
 	var (
 		ctx, cancel = context.WithCancel(context.Background())
-		b           = bus.NewBus(10, time.Second, time.Second)
+		b           = bus.NewBus()
 		s           = NewSSE(b)
 	)
 	defer cancel()
