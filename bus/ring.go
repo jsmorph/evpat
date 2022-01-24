@@ -120,7 +120,7 @@ func (r *Ring) Read(ctx context.Context, q *Query) (chan []Msg, error) {
 
 LOOP:
 	for _, msg := range msgs {
-		if pass, err := q.Filter.Matches(msg.Payload); err != nil {
+		if pass, err := q.Filter.Matches(Canonicalize(msg)); err != nil {
 			log.Printf("Ring.Read debug error %s", err)
 			return nil, err
 		} else if pass {
