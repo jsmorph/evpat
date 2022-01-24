@@ -15,18 +15,28 @@ import (
 	"github.com/jsmorph/evpat/pat"
 )
 
-type SSE struct {
+type Cfg struct {
 	SessionLimit int
-	Bus          *bus.Bus
+}
+
+var DefaultCfg = &Cfg{
+	SessionLimit: 10000,
+}
+
+type SSE struct {
+	*Cfg
+	Bus *bus.Bus
+}
+
+func (cfg *Cfg) New(bus *bus.Bus) *SSE {
+	return &SSE{
+		Cfg: cfg,
+		Bus: bus,
+	}
 }
 
 func NewSSE(bus *bus.Bus) *SSE {
-	s := &SSE{
-		SessionLimit: 10000,
-		Bus:          bus,
-	}
-
-	return s
+	return DefaultCfg.New(bus)
 }
 
 func punt(w http.ResponseWriter, status int, format string, args ...interface{}) {
