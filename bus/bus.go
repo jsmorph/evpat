@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"runtime"
 	"time"
 
 	"github.com/jsmorph/evpat/pat"
@@ -35,32 +36,62 @@ var DefaultQuery = &Query{
 	Filter: pat.Pass,
 }
 
+type Cfg struct {
+	// NumWorkers is the size of the pool of workers that handle
+	// connections.
+	//
+	// The default is based on the number of CPU cores.
+	NumWorkers int
+
+	// MaxReplay is the maximum number of messages to replay.
+	//
+	// With many systems, this maximum will frequently bit hit.
+	MaxReplay int
+
+	// ConsumerTimeout is the length of time to wait on a consumer
+	// to accept a message.
+	ConsumerTimeout time.Duration
+
+	// WorkersTimeout is the length of time to wait for a worker
+	// to handle a connection.
+	WorkersTimeout time.Duration
+}
+
+var DefaultCfg = &Cfg{
+	NumWorkers:      runtime.NumCPU() * 50, // ?
+	MaxReplay:       100,
+	ConsumerTimeout: 20 * time.Second,
+	WorkersTimeout:  10 * time.Second,
+}
+
 type Bus struct {
+	*Cfg
+
 	DB DB
 
 	Incoming    chan []Msg
 	AddConsumer chan *Consumer
 	RemConsumer chan *Consumer
-	MaxReplay   int
 
-	consumerTimeout time.Duration
-	workersTimeout  time.Duration
-	ws              *Workers
+	ws *WorkersPool
 }
 
-func NewBus(workers int, workersTimeout, consumerTimeout time.Duration) *Bus {
+func (cfg *Cfg) New() *Bus {
 	return &Bus{
-		Incoming:        make(chan []Msg),
-		AddConsumer:     make(chan *Consumer),
-		RemConsumer:     make(chan *Consumer),
-		workersTimeout:  workersTimeout,
-		consumerTimeout: consumerTimeout,
-		ws:              NewWorkers(workers),
+		Cfg:         cfg,
+		Incoming:    make(chan []Msg),
+		AddConsumer: make(chan *Consumer),
+		RemConsumer: make(chan *Consumer),
+		ws:          NewWorkersPool(cfg.NumWorkers),
 	}
 }
 
+func NewBus() *Bus {
+	return DefaultCfg.New()
+}
+
 func (b *Bus) work(ctx context.Context, f func(context.Context) error) error {
-	wsctx, _ := context.WithTimeout(ctx, b.workersTimeout)
+	wsctx, _ := context.WithTimeout(ctx, b.WorkersTimeout)
 	i, err := b.ws.Get(wsctx)
 	if err != nil {
 		return err
@@ -133,7 +164,7 @@ func (b *Bus) forward(ctx context.Context, c *Consumer, msgs []Msg) error {
 	select {
 	case <-ctx.Done():
 		return Canceled
-	case <-time.NewTimer(b.consumerTimeout).C:
+	case <-time.NewTimer(b.ConsumerTimeout).C:
 		return Timeout
 	case c.Outgoing <- filtered:
 		return nil

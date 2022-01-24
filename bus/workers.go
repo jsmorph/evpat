@@ -2,21 +2,21 @@ package bus
 
 import "context"
 
-type Workers struct {
+type WorkersPool struct {
 	ws chan int
 }
 
-func NewWorkers(n int) *Workers {
+func NewWorkersPool(n int) *WorkersPool {
 	ws := make(chan int, n)
 	for i := 0; i < n; i++ {
 		ws <- i
 	}
-	return &Workers{
+	return &WorkersPool{
 		ws: ws,
 	}
 }
 
-func (w *Workers) Get(ctx context.Context) (int, error) {
+func (w *WorkersPool) Get(ctx context.Context) (int, error) {
 	select {
 	case <-ctx.Done():
 		return 0, Canceled
@@ -25,7 +25,7 @@ func (w *Workers) Get(ctx context.Context) (int, error) {
 	}
 }
 
-func (w *Workers) Return(ctx context.Context, i int) error {
+func (w *WorkersPool) Return(ctx context.Context, i int) error {
 	select {
 	case <-ctx.Done():
 		return Canceled

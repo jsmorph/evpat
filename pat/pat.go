@@ -127,6 +127,16 @@ func (cfg *Cfg) parseConstraint(x interface{}) (Constraint, error) {
 		}, nil
 	case map[string]interface{}:
 
+		if y, have := vv["anything-but"]; have {
+			a, is := y.([]interface{})
+			if !is {
+				return nil, fmt.Errorf("bad anything-but argument '%#v' (%T)", y, y)
+			}
+			return &AnythingBut{
+				Value: a,
+			}, nil
+		}
+
 		if y, have := vv["prefix"]; have {
 			s, is := y.(string)
 			if !is {
@@ -266,6 +276,23 @@ type Literal struct {
 
 func (c *Literal) Matches(x interface{}) (bool, error) {
 	return Matches(c.Value, x)
+}
+
+type AnythingBut struct {
+	Value []interface{}
+}
+
+func (c *AnythingBut) Matches(x interface{}) (bool, error) {
+	for _, y := range c.Value {
+		ok, err := Matches(y, x)
+		if err != nil {
+			return false, err
+		}
+		if ok {
+			return false, nil
+		}
+	}
+	return true, nil
 }
 
 type Prefix struct {

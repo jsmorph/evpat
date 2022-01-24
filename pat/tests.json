@@ -1,12 +1,27 @@
 [
     {
-	"pat":{"type":"conj"},
-	"msg":{"foo":"bar"},
+	"pat": {"want":[{"anything-but":["kale","mold"]}]},
+	"msg": {"want":"queso"},
+	"matches": true
+    },
+    {
+	"pat": {"want":[{"anything-but":["kale","mold"]}]},
+	"msg": {"want":"kale"},
 	"matches": false
     },
     {
-	"pat":{"type":"conj"},
-	"msg":{"type":"conj"},
+	"pat": {"gimme":[1,2,3]},
+	"msg": {"gimme":2},
+	"matches": true
+    },
+    {
+	"pat": {"type":"conj"},
+	"msg": {"foo":"bar"},
+	"matches": false
+    },
+    {
+	"pat": {"type":"conj"},
+	"msg": {"type":"conj"},
 	"matches": true
     },
     {

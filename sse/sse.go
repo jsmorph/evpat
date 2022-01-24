@@ -16,7 +16,12 @@ import (
 )
 
 type Cfg struct {
+	// SessionLimit is the maximum number of message to deliver
+	// before closing the connection.
 	SessionLimit int
+
+	// Logging turns on some basic logging.
+	Logging bool
 }
 
 var DefaultCfg = &Cfg{
@@ -39,13 +44,20 @@ func NewSSE(bus *bus.Bus) *SSE {
 	return DefaultCfg.New(bus)
 }
 
+func (s *SSE) logf(format string, args ...interface{}) {
+	if !s.Cfg.Logging {
+		return
+	}
+	log.Printf(format, args...)
+}
+
 func punt(w http.ResponseWriter, status int, format string, args ...interface{}) {
 	w.WriteHeader(status)
 	fmt.Fprintf(w, format, args...)
 }
 
 func (s *SSE) Handle(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-	log.Printf("SSE.Handle")
+	s.logf("SSE.Handle")
 
 	q, err := url.ParseQuery(r.URL.RawQuery)
 	if err != nil {
@@ -114,13 +126,13 @@ func (s *SSE) Handle(ctx context.Context, w http.ResponseWriter, r *http.Request
 		},
 	}
 
-	log.Printf("SSE.Handler adding consumer")
+	s.logf("SSE.Handler adding consumer")
 	select {
 	case <-ctx.Done():
 		return bus.Canceled
 	case s.Bus.AddConsumer <- c:
 		defer func() {
-			log.Printf("SSE.Handler removing consumer")
+			s.logf("SSE.Handler removing consumer")
 			select {
 			case <-ctx.Done():
 				return
@@ -153,7 +165,7 @@ LOOP:
 				e += fmt.Sprintf("data: %s\n\n", js)
 
 				if _, err := w.Write([]byte(e)); err != nil {
-					log.Printf("INFO Handler Write error %s", err)
+					s.logf("SSE.Handler Write error %s", err)
 					break LOOP
 				}
 
@@ -170,7 +182,7 @@ LOOP:
 		}
 	}
 
-	log.Printf("SSE.Handler terminating")
+	s.logf("SSE.Handler terminating")
 
 	return nil
 }
