@@ -9,7 +9,7 @@ message [bus](bus) with a [server-sent events
 [sse](API).  Yes, SSE seems pretty clunky, but it's reasonably
 well-supported, simple, and actually supports the basics of what I
 happen to want right now.  Command-line executable that subscribes to
-Redis is [cmd/patr](here).
+Redis is [cmd/sser](here).
 
 ## References
 
