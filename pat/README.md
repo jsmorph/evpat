@@ -2,7 +2,9 @@
 
 A naive implementation of [Amazon EventBridge event
    patterns](https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-event-patterns.html).
-   
+
+The tests include an option to use the AWS SDK to [test
+matching](https://pkg.go.dev/github.com/aws/aws-sdk-go-v2/service/eventbridge#Client.TestEventPattern).
 
 ## ToDo
 
