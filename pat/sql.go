@@ -162,7 +162,7 @@ func TS(t time.Time) string {
 	return t.Format(time.RFC3339Nano)
 }
 
-func GenerateInsert(table string, t0 time.Time, eid int, event interface{}) (*Statement, error) {
+func GenerateInsert(table string, t0 time.Time, eid interface{}, event interface{}) (*Statement, error) {
 	var (
 		args = make([]interface{}, 0, 4)
 		vals = make([]string, 0, 4)
