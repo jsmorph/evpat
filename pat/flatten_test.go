@@ -65,10 +65,11 @@ func TestFlatten(t *testing.T) {
 
 	e := ParseJSON(`{"likes":"tacos","when":{"every":"day"}}`)
 
-	g := func(prefix []string, val interface{}) {
+	g := func(prefix []string, val interface{}) error {
 		fmt.Printf("%v %#v\n", prefix, val)
 		fmt.Printf("INSERT INTO %s (ts,branch,value) VALUES (?,?,?)\n", realTable)
 		fmt.Printf("%v\n", []interface{}{time.Now().UTC(), strings.Join(prefix, "/"), val})
+		return nil
 	}
 
 	FlattenEvent(e, g, nil)
@@ -83,13 +84,9 @@ func TestDB(t *testing.T) {
 
 	realTable := "events"
 
-	{
-
-		sqlStmt := `CREATE TABLE events (eid TEXT, ts TEXT, branch TEXT, value TEXT)`
-		_, err = db.Exec(sqlStmt)
-		if err != nil {
-			t.Fatal(err)
-		}
+	_, err = db.Exec(CreateEventsTable(realTable).S)
+	if err != nil {
+		t.Fatal(err)
 	}
 
 	t0 := time.Now().UTC()
@@ -100,18 +97,13 @@ func TestDB(t *testing.T) {
 
 		e := ParseJSON(`{"likes":"tacos","needs":42}`)
 
-		g := func(prefix []string, val interface{}) {
-
-			s := fmt.Sprintf("INSERT INTO %s (eid,ts,branch,value) VALUES (?,?,?,?)\n", realTable)
-			args := []interface{}{eid, TS(t0), strings.Join(prefix, "/"), val}
-			fmt.Printf("%s%v\n", s, args)
-
-			if _, err = db.Exec(s, args...); err != nil {
-				t.Fatal(err)
-			}
+		s, err := GenerateInsert(realTable, t0, eid, e)
+		if err != nil {
+			t.Fatal(err)
 		}
-
-		FlattenEvent(e, g, nil)
+		if _, err := db.Exec(s.S, s.Args...); err != nil {
+			t.Fatal(err)
+		}
 	}
 
 	t0 = t0.Add(-10 * time.Second)

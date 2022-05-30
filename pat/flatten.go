@@ -23,20 +23,26 @@ func FlattenPattern(x interface{}, f func(*Branch), prefix []string) {
 	}
 }
 
-func FlattenEvent(x interface{}, f func(k []string, v interface{}), prefix []string) {
+func FlattenEvent(x interface{}, f func(k []string, v interface{}) error, prefix []string) error {
 	if prefix == nil {
 		prefix = make([]string, 0, 4)
 	}
 	switch vv := x.(type) {
 	case map[string]interface{}:
 		for k, v := range vv {
-			FlattenEvent(v, f, append(prefix, k))
+			if err := FlattenEvent(v, f, append(prefix, k)); err != nil {
+				return err
+			}
 		}
+		return nil
 	case []interface{}:
 		for _, v := range vv {
-			FlattenEvent(v, f, prefix)
+			if err := FlattenEvent(v, f, prefix); err != nil {
+				return err
+			}
 		}
+		return nil
 	default:
-		f(prefix, vv)
+		return f(prefix, vv)
 	}
 }

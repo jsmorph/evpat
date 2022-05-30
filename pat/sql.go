@@ -161,3 +161,38 @@ WHERE
 func TS(t time.Time) string {
 	return t.Format(time.RFC3339Nano)
 }
+
+func GenerateInsert(table string, t0 time.Time, eid int, event interface{}) (*Statement, error) {
+	var (
+		args = make([]interface{}, 0, 4)
+		vals = make([]string, 0, 4)
+	)
+
+	f := func(prefix []string, val interface{}) error {
+		args = append(args, eid)
+		args = append(args, TS(t0))
+		args = append(args, strings.Join(prefix, "/"))
+		args = append(args, val)
+		vals = append(vals, "(?,?,?,?)")
+		return nil
+	}
+
+	if err := FlattenEvent(event, f, nil); err != nil {
+		return nil, err
+	}
+
+	s := &Statement{
+		S: fmt.Sprintf("INSERT INTO %s (eid,ts,branch,value) VALUES %s",
+			table, strings.Join(vals, ", ")),
+		Args: args,
+	}
+
+	return s, nil
+}
+
+func CreateEventsTable(tableName string) *Statement {
+	return &Statement{
+		S: fmt.Sprintf("CREATE TABLE %s(eid TEXT, ts TEXT, branch TEXT, value TEXT)",
+			tableName),
+	}
+}
