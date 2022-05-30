@@ -9,6 +9,7 @@ import (
 // "Pattern", I guess.
 type Constraint interface {
 	Matches(msg interface{}) (bool, error)
+	Where(string, string, string) *WhereConjunct
 }
 
 // Cfg can store limits and options for parsing patterns.
