@@ -1,6 +1,7 @@
 package pat
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -106,7 +107,7 @@ func And(conjuncts []*WhereConjunct) *WhereConjunct {
 	return conjunct
 }
 
-func GenerateQuery(realTable string, t0 time.Time, pattern interface{}) (*Statement, error) {
+func GenerateQuery(eventsTable, indexTable string, t0 time.Time, pattern interface{}) (*Statement, error) {
 	p, err := ParsePattern(pattern)
 	if err != nil {
 		return nil, err
@@ -135,7 +136,7 @@ func GenerateQuery(realTable string, t0 time.Time, pattern interface{}) (*Statem
 		if 0 < i {
 			joins = append(joins,
 				fmt.Sprintf("LEFT JOIN %s AS %s ON %s.eid = %s.eid",
-					realTable, table, previousTable, table))
+					indexTable, table, previousTable, table))
 		}
 		previousTable = table
 		i++
@@ -143,14 +144,16 @@ func GenerateQuery(realTable string, t0 time.Time, pattern interface{}) (*Statem
 
 	s := &Statement{
 		S: fmt.Sprintf(`
-SELECT t0.eid AS eid
+SELECT t0.eid AS eid, event
 FROM %s AS t0
 %s
+LEFT JOIN %s ON %s.eid = t0.eid
 WHERE 
  %s
 `,
-			realTable,
+			indexTable,
 			strings.Join(joins, "\n"),
+			eventsTable, eventsTable,
 			strings.Join(ss, " AND \n ")),
 		Args: args,
 	}
@@ -162,7 +165,12 @@ func TS(t time.Time) string {
 	return t.Format(time.RFC3339Nano)
 }
 
-func GenerateInsert(table string, t0 time.Time, eid interface{}, event interface{}) (*Statement, error) {
+func GenerateInsert(eventsTable, indexTable string, t0 time.Time, eid interface{}, event interface{}) ([]*Statement, error) {
+	js, err := json.Marshal(&event)
+	if err != nil {
+		return nil, err
+	}
+
 	var (
 		args = make([]interface{}, 0, 4)
 		vals = make([]string, 0, 4)
@@ -181,18 +189,31 @@ func GenerateInsert(table string, t0 time.Time, eid interface{}, event interface
 		return nil, err
 	}
 
-	s := &Statement{
-		S: fmt.Sprintf("INSERT INTO %s (eid,ts,branch,value) VALUES %s",
-			table, strings.Join(vals, ", ")),
-		Args: args,
-	}
-
-	return s, nil
+	return []*Statement{
+		&Statement{
+			S: fmt.Sprintf("INSERT INTO %s (eid,ts,branch,value) VALUES %s",
+				indexTable, strings.Join(vals, ", ")),
+			Args: args,
+		},
+		&Statement{
+			S: fmt.Sprintf("INSERT INTO %s (eid,event) VALUES (?,?)",
+				eventsTable),
+			Args: []interface{}{eid, string(js)},
+		},
+	}, nil
 }
 
-func CreateEventsTable(tableName string) *Statement {
-	return &Statement{
-		S: fmt.Sprintf("CREATE TABLE %s(eid TEXT, ts TEXT, branch TEXT, value TEXT)",
-			tableName),
+func CreateEventsTables(eventsTable, indexTable string) []*Statement {
+	// ToDo: Foreign key, ...
+
+	return []*Statement{
+		&Statement{
+			S: fmt.Sprintf("CREATE TABLE %s(eid TEXT PRIMARY KEY, event TEXT)",
+				eventsTable),
+		},
+		&Statement{
+			S: fmt.Sprintf("CREATE TABLE %s(eid TEXT, ts TEXT, branch TEXT, value TEXT)",
+				indexTable),
+		},
 	}
 }
